@@ -45,8 +45,13 @@ async def update_contact(contact: ContactsCreate, contact_id: int, db: AsyncSess
     return c
 
 
-
 @router.get("/birthdays/", response_model=list[ContactsResponse])
 async def search_contacts_birthdays(days: int, db: AsyncSession = Depends(get_db)):
     repo = ContactsRepository(db)
     return await repo.search_contacts_birthdays(days)
+
+
+@router.get("/{contact_id}", response_model=ContactsResponse)
+async def get_contacts_by_id(contact_id: int, db: AsyncSession = Depends(get_db)):
+    repo = ContactsRepository(db)
+    return await repo.get_contacts_by_id(contact_id)
