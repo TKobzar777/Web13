@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from datetime import datetime, timedelta, date
 
 from src.contacts.models import Contact
 from src.contacts.schemas import ContactsCreate
@@ -14,12 +15,12 @@ class ContactsRepository:
         return results.scalars().all()
 
     async def create_contacts(self, contact: ContactsCreate):
+
         new_contact = Contact(**contact.model_dump())
         self.session.add(new_contact)
         await self.session.commit()
         await self.session.refresh(new_contact)  # To get the ID from the database
         return new_contact
-
     async def search_contacts(self, query):
         q = select(Contact).filter(
             (Contact.first_name.ilike(query))
@@ -52,4 +53,13 @@ class ContactsRepository:
             await self.session.refresh(stored_contact)
 
         return stored_contact
+
+
+    async def search_contacts_birthdays(self, days: int = 7):
+        today = datetime.today()
+        days_limit = today + timedelta(days=days)
+        query = select(Contact).filter((Contact.birthday >= today) & (Contact.birthday <= days_limit))
+
+        results = await self.session.execute(query)
+        return results.scalars().all()
 
