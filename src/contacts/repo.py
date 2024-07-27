@@ -14,7 +14,6 @@ class ContactsRepository:
         return results.scalars().all()
 
     async def create_contacts(self, contact: ContactsCreate):
-
         new_contact = Contact(**contact.model_dump())
         self.session.add(new_contact)
         await self.session.commit()
@@ -36,3 +35,21 @@ class ContactsRepository:
         contact = result.scalar_one()
         await self.session.delete(contact)
         await self.session.commit()
+
+
+
+    async def update(self, contact: ContactsCreate, contact_id: int):
+        q = select(Contact).where(Contact.id == contact_id)
+        result = await self.session.execute(q)
+        stored_contact = result.scalar_one()
+        if stored_contact:
+            stored_contact.first_name = contact.first_name
+            stored_contact.last_name = contact.last_name
+            stored_contact.email = contact.email
+            stored_contact.phone_number = contact.phone_number
+            stored_contact.birthday = contact.birthday
+            await self.session.commit()
+            await self.session.refresh(stored_contact)
+
+        return stored_contact
+

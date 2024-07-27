@@ -18,3 +18,7 @@ class ContactsResponse(ContactsBase):
 
 class ContactsCreate(ContactsBase):
     pass
+
+
+class ContactsUpdate(ContactsBase):
+    pass

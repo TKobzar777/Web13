@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.db import get_db
@@ -6,12 +7,6 @@ from src.contacts.repo import ContactsRepository
 from src.contacts.schemas import ContactsCreate, ContactsResponse
 
 router = APIRouter()
-
-
-@router.get("/ping")
-async def ping():
-    return {"message": "pong"}
-
 
 
 @router.post("/", response_model=ContactsResponse)
@@ -39,3 +34,12 @@ async def get_contacts(
 async def search_contacts(query: str, db: AsyncSession = Depends(get_db)):
     repo = ContactsRepository(db)
     return await repo.search_contacts(query)
+
+
+@router.put("/{contact_id}", response_model=ContactsResponse)
+async def update_contact(contact: ContactsCreate, contact_id: int, db: AsyncSession = Depends(get_db)):
+    repo = ContactsRepository(db)
+    c = await repo.update(contact, contact_id)
+    if c is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
+    return c
