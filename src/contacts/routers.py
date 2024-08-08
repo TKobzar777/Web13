@@ -1,57 +1,125 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth.models import User
+from src.auth.schemas import RoleEnum
+from src.contacts.schemas import ContactsCreate, ContactsUpdate, ContactsResponse
+from src.contacts.repo import ContactRepository
 from config.db import get_db
-from src.contacts.repo import ContactsRepository
-from src.contacts.schemas import ContactsCreate, ContactsResponse
+from src.auth.utils import get_current_user, RoleChecker
 
 router = APIRouter()
 
+# Add new contacts
+@router.post("/", response_model=ContactsResponse, dependencies=[Depends(RoleChecker([RoleEnum.USER, RoleEnum.ADMIN]))])
+async def create_contact(
+    contact_create: ContactsCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    contact_repo = ContactRepository(db)
+    return await contact_repo.create_contact(contact_create, current_user.id)
 
-@router.post("/", response_model=ContactsResponse)
-async def create_contacts(contact: ContactsCreate, db: AsyncSession = Depends(get_db)):
-    repo = ContactsRepository(db)
-    return await repo.create_contacts(contact)
-
-
-@router.delete("/{contact_id}")
-async def delete_contact(contact_id: int, db: AsyncSession = Depends(get_db)):
-    repo = ContactsRepository(db)
-    await repo.delete_contact(contact_id)
-    return {"message": f"Contact {contact_id} deleted"}
-
+# find contact by id
+@router.get("/{contact_id}", response_model=ContactsResponse)
+async def get_contact(
+    contact_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    contact_repo = ContactRepository(db)
+    contact = await contact_repo.get_contact(contact_id, current_user.id)
+    if not contact:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contact not found"
+        )
+    return contact
 
 @router.get("/", response_model=list[ContactsResponse])
 async def get_contacts(
-    limit: int = 10, offset: int = 0, db: AsyncSession = Depends(get_db)
+    skip: int = 0,
+    limit: int = 10,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
-    repo = ContactsRepository(db)
-    return await repo.get_contacts(limit, offset)
-
-
-@router.get("/search/", response_model=list[ContactsResponse])
-async def search_contacts(query: str, db: AsyncSession = Depends(get_db)):
-    repo = ContactsRepository(db)
-    return await repo.search_contacts(query)
+    contact_repo = ContactRepository(db)
+    return await contact_repo.get_contacts(current_user.id, skip, limit)
 
 
 @router.put("/{contact_id}", response_model=ContactsResponse)
-async def update_contact(contact: ContactsCreate, contact_id: int, db: AsyncSession = Depends(get_db)):
-    repo = ContactsRepository(db)
-    c = await repo.update(contact, contact_id)
-    if c is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
-    return c
+async def update_contact(
+    contact_id: int,
+    contact_update: ContactsUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    contact_repo = ContactRepository(db)
+    contact = await contact_repo.get_contact(contact_id, current_user.id)
+    if not contact:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contact not found"
+        )
+    return await contact_repo.update_contact(contact_id, contact_update, current_user.id)
 
+@router.delete("/{contact_id}")
+async def delete_contact(
+    contact_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    contact_repo = ContactRepository(db)
+    contact = await contact_repo.get_contact(contact_id, current_user.id)
+    if not contact:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contact not found"
+        )
+    await contact_repo.delete_contact(contact_id, current_user.id)
+    return {"detail": "Contact deleted"}
 
 @router.get("/birthdays/", response_model=list[ContactsResponse])
-async def search_contacts_birthdays(days: int, db: AsyncSession = Depends(get_db)):
-    repo = ContactsRepository(db)
-    return await repo.search_contacts_birthdays(days)
+async def search_contacts_birthdays(days: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    repo = ContactRepository(db)
+    return await repo.search_contacts_birthdays(current_user.id, days)
 
 
-@router.get("/{contact_id}", response_model=ContactsResponse)
-async def get_contacts_by_id(contact_id: int, db: AsyncSession = Depends(get_db)):
-    repo = ContactsRepository(db)
-    return await repo.get_contacts_by_id(contact_id)
+@router.get("/all/", response_model=list[ContactsResponse], dependencies=[Depends(RoleChecker([RoleEnum.ADMIN]))], tags=['admin'])
+async def get_contacts_admin(
+    skip: int = 0,
+    limit: int = 10,
+    db: AsyncSession = Depends(get_db)
+):
+    contact_repo = ContactRepository(db)
+    return await contact_repo.get_contacts_admin(skip, limit)
+
+
+# find contact by id
+@router.get("/all/{contact_id}", response_model=ContactsResponse, dependencies=[Depends(RoleChecker([RoleEnum.ADMIN]))], tags=['admin'])
+async def get_contact_admin(
+    contact_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    contact_repo = ContactRepository(db)
+    contact = await contact_repo.get_contact_admin(contact_id)
+    if not contact:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contact not found"
+        )
+    return contact
+
+
+@router.get("/birthdays/", response_model=list[ContactsResponse],  dependencies=[Depends(RoleChecker([RoleEnum.ADMIN]))], tags=['admin'])
+async def search_contacts_birthdays_admin(days: int,
+    db: AsyncSession = Depends(get_db)
+):
+    repo = ContactRepository(db)
+    return await repo.search_contacts_birthdays_admin(days)
+
+
+
