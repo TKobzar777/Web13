@@ -15,7 +15,7 @@ class UserRepository:
         hashed_password = get_password_hash(user_create.password)
         user_role = await RoleRepository(self.session).get_role_by_name(RoleEnum.USER)
         new_user = User(
-            username=user_create.username,
+            # username=user_create.username,
             email=user_create.email,
             role_id=user_role.id,
             hashed_password=hashed_password,
@@ -25,8 +25,8 @@ class UserRepository:
         await self.session.refresh(new_user)
         return new_user
 
-    async def get_user(self, username: str) -> User:
-        query = select(User).where(User.username == username)
+    async def get_user(self, email: str) -> User:
+        query = select(User).where(User.email == email)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 

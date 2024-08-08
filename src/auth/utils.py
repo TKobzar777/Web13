@@ -49,10 +49,10 @@ def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
 def decode_access_token(token: str) -> TokenData | None:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
+        email: str = payload.get("sub")
+        if email is None:
             return None
-        return TokenData(username=username)
+        return TokenData(email=email)
     except JWTError:
         return None
 
@@ -66,7 +66,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     if token_data is None:
         raise credentials_exception
     user_repo = UserRepository(db)
-    user = await user_repo.get_user(token_data.username)
+    user = await user_repo.get_user(token_data.email)
     if user is None:
         raise credentials_exception
     return user

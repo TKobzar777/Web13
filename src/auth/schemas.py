@@ -12,7 +12,7 @@ class RoleBase(BaseModel):
     name: RoleEnum
 
 class UserBase(BaseModel):
-    username: str
+    # username: str
     email: EmailStr
 
 class UserCreate(UserBase):
@@ -32,4 +32,4 @@ class Token(BaseModel):
     token_type: str
 
 class TokenData(BaseModel):
-    username: Optional[str] = None
+    email: Optional[str] = None
