@@ -114,7 +114,7 @@ async def get_contact_admin(
     return contact
 
 
-@router.get("/birthdays/", response_model=list[ContactsResponse],  dependencies=[Depends(RoleChecker([RoleEnum.ADMIN]))], tags=['admin'])
+@router.get("/all/birthdays/", response_model=list[ContactsResponse], dependencies=[Depends(RoleChecker([RoleEnum.ADMIN]))], tags=['admin'])
 async def search_contacts_birthdays_admin(days: int,
     db: AsyncSession = Depends(get_db)
 ):

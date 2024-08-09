@@ -81,14 +81,12 @@ class ContactRepository:
         result = await self.session.execute(query)
         return result.scalars().all()
 
-
-
     async def search_contacts_birthdays_admin(self, days: int = 7):
-        today = date.today()
-        query = select(Contact).filter(
+
+        query = select(Contact).where(
             func.date_part('doy', Contact.birthday).between(
-                func.date_part('doy', today) - 1,
-                func.date_part('doy', today) + days
+                func.date_part('doy', func.now()),
+                func.date_part('doy', func.now()) + days
             )
         )
         # Выполнение запроса
