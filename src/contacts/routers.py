@@ -1,5 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi_cache.decorator import cache
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+
 
 from src.auth.models import User
 from src.auth.schemas import RoleEnum
@@ -11,7 +15,16 @@ from src.auth.utils import get_current_user, RoleChecker
 router = APIRouter()
 
 # Add new contacts
-@router.post("/", response_model=ContactsResponse, dependencies=[Depends(RoleChecker([RoleEnum.USER, RoleEnum.ADMIN]))])
+
+# @router.post("/",
+#              response_model=ContactsResponse,
+#              dependencies=[Depends(RoleChecker([RoleEnum.USER, RoleEnum.ADMIN]))]
+#              )
+@router.post("/",
+              response_model=ContactsResponse,
+              dependencies=[Depends(RoleChecker([RoleEnum.USER, RoleEnum.ADMIN])),
+                            Depends(RateLimiter(times=2, seconds=5))]
+              )
 async def create_contact(
     contact_create: ContactsCreate,
     current_user: User = Depends(get_current_user),
@@ -21,7 +34,10 @@ async def create_contact(
     return await contact_repo.create_contact(contact_create, current_user.id)
 
 # find contact by id
-@router.get("/{contact_id}", response_model=ContactsResponse)
+@router.get("/{contact_id}",
+            response_model=ContactsResponse,
+            dependencies=[Depends(RateLimiter(times=2, seconds=5))]
+            )
 async def get_contact(
     contact_id: int,
     current_user: User = Depends(get_current_user),
@@ -36,7 +52,9 @@ async def get_contact(
         )
     return contact
 
+
 @router.get("/", response_model=list[ContactsResponse])
+@cache(expire=600, namespace="get_contacts")
 async def get_contacts(
     skip: int = 0,
     limit: int = 10,

@@ -19,6 +19,7 @@ class UserRepository:
             email=user_create.email,
             role_id=user_role.id,
             hashed_password=hashed_password,
+            is_active=False,  # User is active by default, you can add more logic here to handle user activation/deactivation.
         )
         self.session.add(new_user)
         await self.session.commit()
@@ -29,6 +30,12 @@ class UserRepository:
         query = select(User).where(User.email == email)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
+
+    async def activate_user(self, user: User):
+        user.is_active = True
+        self.session.add(user)
+        await self.session.commit()
+        await self.session.refresh(user)
 
 class RoleRepository:
 
