@@ -15,19 +15,6 @@ origins = [
     ]
 
 
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.include_router(router_contacts, prefix="/contacts", tags=["contacts"])
-app.include_router(router_auth, prefix="/auth", tags=["auth"])
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup event
@@ -42,3 +29,12 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(router_contacts, prefix="/contacts", tags=["contacts"])
 app.include_router(router_auth, prefix="/auth", tags=["auth"])
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
