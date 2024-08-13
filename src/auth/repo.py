@@ -37,6 +37,12 @@ class UserRepository:
         await self.session.commit()
         await self.session.refresh(user)
 
+    async def update_avatar(self, url, user: User):
+        user.avatar = url
+        self.session.add(user)
+        await self.session.commit()
+        await self.session.refresh(user)
+
 class RoleRepository:
 
     def __init__(self, session: AsyncSession):

@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_cache.decorator import cache
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
-from fastapi.responses import JSONResponse
-import cloudinary
-import cloudinary.uploader
+# from fastapi.responses import JSONResponse
+# import cloudinary
+# import cloudinary.uploader
 
 
 from src.auth.models import User
@@ -14,34 +14,44 @@ from src.contacts.schemas import ContactsCreate, ContactsUpdate, ContactsRespons
 from src.contacts.repo import ContactRepository
 from config.db import get_db
 from src.auth.utils import get_current_user, RoleChecker
-from config.general import settings
+# from config.general import settings
 
 router = APIRouter()
+# MAX_FILE_SIZE = 5 * 1024 * 1024
+#
+# @router.post("/upload-photo/")
+# async def upload_photo(file: UploadFile = File(), current_user: User = Depends(get_current_user),
+#     db: AsyncSession = Depends(get_db)):
+#     # Check the file size
+#     contact_repo = ContactRepository(db)
+#     if file.size > MAX_FILE_SIZE:
+#         raise HTTPException(status_code=400, detail=f"File size exceeds the limit of {MAX_FILE_SIZE / 1024 / 1024} MB")
+#     # Initialize Cloudinary configuration
+#     cloudinary.config(
+#         cloud_name=settings.cloudinary_name,
+#         api_key=settings.cloudinary_api_key,
+#         api_secret=settings.cloudinary_api_secret
+#     )
+#     try:
+#         # Upload the file to Cloudinary
+#         result = cloudinary.uploader.upload(file.file)
+#         return JSONResponse(content={"public_id": result["public_id"], "url": result["url"]})
+#         await contact_repo.update_avatar(result["url"], current_user.id)
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
-cloudinary.config(
-    cloud_name=settings.cloudinary_name,
-    api_key=settings.cloudinary_api_key,
-    api_secret=settings.cloudinary_api_secret
-)
-@router.post("/upload-photo/")
-async def upload_photo(file: UploadFile = File()):
-    try:
-        # Upload the file to Cloudinary
-        result = cloudinary.uploader.upload(file.file)
-        return JSONResponse(content={"public_id": result["public_id"], "url": result["url"]})
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
 # Add new contacts
 
 # @router.post("/",
-#              response_model=ContactsResponse,
-#              dependencies=[Depends(RoleChecker([RoleEnum.USER, RoleEnum.ADMIN]))]
-#              )
+#               response_model=ContactsResponse,
+#               dependencies=[Depends(RoleChecker([RoleEnum.USER, RoleEnum.ADMIN])),
+#                             Depends(RateLimiter(times=2, seconds=5))]
+#               )
 @router.post("/",
-              response_model=ContactsResponse,
-              dependencies=[Depends(RoleChecker([RoleEnum.USER, RoleEnum.ADMIN])),
-                            Depends(RateLimiter(times=2, seconds=5))]
-              )
+             response_model=ContactsResponse,
+             dependencies=[Depends(RoleChecker([RoleEnum.USER, RoleEnum.ADMIN]))]
+             )
 async def create_contact(
     contact_create: ContactsCreate,
     current_user: User = Depends(get_current_user),
