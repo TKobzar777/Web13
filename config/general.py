@@ -16,7 +16,6 @@ class Settings(BaseSettings):
     mail_server: str = "localhost"
 
 
-
     class Config:
         env_file = ".env"
         extra = "allow"
