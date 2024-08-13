@@ -17,16 +17,10 @@ from src.auth.utils import get_current_user, RoleChecker
 router = APIRouter()
 
 # Add new contacts
-# @router.post("/",
-#               response_model=ContactsResponse,
-#               dependencies=[Depends(RoleChecker([RoleEnum.USER, RoleEnum.ADMIN])),
-#                             Depends(RateLimiter(times=2, seconds=5))]
-#               )
 @router.post("/",
              response_model=ContactsResponse,
-             dependencies=[Depends(RateLimiter(times=2, seconds=5))]
+             dependencies=[Depends(RateLimiter(times=2, seconds=59)), Depends(RoleChecker([RoleEnum.USER, RoleEnum.ADMIN]))]
              )
-
 async def create_contact(
     contact_create: ContactsCreate,
     current_user: User = Depends(get_current_user),
